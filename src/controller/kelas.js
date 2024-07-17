@@ -1,19 +1,38 @@
 const KelasModel = require("../models/kelas");
 
 const getAllKelas = async (req, res) => {
+  const { filter, orderBy, sort, search } = req.query;
+  const filterParams = {};
+
+  if (filter) {
+    try {
+      Object.assign(filterParams, JSON.parse(filter));
+    } catch (error) {
+      return res.status(400).json({ message: 'Invalid filter JSON format' });
+    }
+  }
+
   try {
-    const [data] = await KelasModel.getAllKelas();
+    const [data] = await KelasModel.getAllKelas(filterParams, orderBy, sort, search);
+
+    if (!data || data.length === 0) {
+      return res.status(404).json({
+        message: 'Kelas not found',
+      });
+    }
+
     res.json({
-      message: "GET all kelas success",
+      message: 'GET data kelas success',
       data: data,
     });
   } catch (error) {
     res.status(500).json({
-      message: "Server Error",
+      message: 'Server Error',
       serverMessage: error,
     });
   }
 };
+
 
 const createNewKelas = async (req, res) => {
   const { body } = req;

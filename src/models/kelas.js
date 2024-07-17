@@ -1,7 +1,23 @@
 const dbPool = require("../config/database");
 
-const getAllKelas = () => {
-  const SQLQuery = "SELECT * FROM kelas";
+const getAllKelas = (filterParams = {}, orderBy = 'nama', sort = 'ASC', search = '') => {
+  const { nama, harga } = filterParams;
+  let SQLQuery = "SELECT * FROM kelas WHERE 1 = 1";
+
+  if (nama) {
+    SQLQuery += ` AND nama LIKE '%${nama}%'`;
+  }
+
+  if (harga) {
+    SQLQuery += ` AND harga = ${harga}`;
+  }
+
+  if (search) {
+    SQLQuery += ` AND (nama LIKE '%${search}%' OR deskripsi LIKE '%${search}%')`;
+  }
+
+  SQLQuery += ` ORDER BY ${orderBy} ${sort}`;
+
   return dbPool.execute(SQLQuery);
 };
 

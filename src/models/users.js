@@ -1,21 +1,50 @@
 const dbPool = require("../config/database");
+const crypto = require('crypto');
 
 const getAllUsers = () => {
   const SQLQuery = "SELECT * FROM user";
   return dbPool.execute(SQLQuery);
 };
 
-const createNewUser = (body) => {
-  const { email, nama, kata_sandi, nomor_hp, jenis_kelamin, foto_profile } = body;
-  const SQLQuery = `INSERT INTO user (email, nama, kata_sandi, nomor_hp, jenis_kelamin, foto_profile) 
-                    VALUES (?, ?, ?, ?, ?, ?)`;
-  return dbPool.execute(SQLQuery, [email, nama, kata_sandi, nomor_hp, jenis_kelamin, foto_profile]);
+const getUserByEmail = (email) => {
+  const SQLQuery = "SELECT * FROM user WHERE email = ?";
+  return dbPool.execute(SQLQuery, [email]);
 };
 
-const updateUser = (body, email) => {
-  const { nama, kata_sandi, nomor_hp, jenis_kelamin, foto_profile } = body;
-  const SQLQuery = `UPDATE user SET nama=?, kata_sandi=?, nomor_hp=?, jenis_kelamin=?, foto_profile=? WHERE email=?`;
-  return dbPool.execute(SQLQuery, [nama, kata_sandi, nomor_hp, jenis_kelamin, foto_profile, email]);
+const register = async (body) => {
+  const { email, fullname, password, username } = body;
+
+  const token = crypto.randomBytes(64).toString('hex');
+
+  const SQLQuery = `INSERT INTO user (email, fullname, password, username, emailToken) 
+                    VALUES (?, ?, ?, ?, ?)`;
+  await dbPool.execute(SQLQuery, [email, fullname, password, username, token]);
+
+  return { email, fullname, username, emailToken: token };
+};
+
+
+const updateUser = async (body, id) => {
+  const { fullname, password, username, email } = body;
+
+  try {
+    if (password) {
+      const SQLQuery = `UPDATE user SET fullname=?, password=?, username=?, email=? WHERE id=?`;
+      return dbPool.execute(SQLQuery, [
+        fullname,
+        password,
+        username,
+        email,
+        id,
+      ]);
+    } else {
+      const SQLQuery = `UPDATE user SET fullname=?, password=? username=?, email=? WHERE id=?`;
+      return dbPool.execute(SQLQuery, [fullname, password, username, email, id]);
+    }
+  } catch (error) {
+    console.error("Error updating user:", error.message);
+    throw new Error("Failed to update user.");
+  }
 };
 
 const deleteUser = (email) => {
@@ -23,4 +52,10 @@ const deleteUser = (email) => {
   return dbPool.execute(SQLQuery, [email]);
 };
 
-module.exports = { getAllUsers, createNewUser, updateUser, deleteUser };
+module.exports = {
+  getAllUsers,
+  getUserByEmail,
+  register,
+  updateUser,
+  deleteUser,
+};
