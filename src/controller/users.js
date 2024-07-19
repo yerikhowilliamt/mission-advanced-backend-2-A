@@ -21,13 +21,21 @@ const getAllUsers = async (req, res) => {
 
 const register = async (req, res) => {
   const { body } = req;
+  const { email } = body;
 
   try {
+    const existingUser = await UsersModel.getUserByEmail(email);
+
+    if (existingUser && existingUser.length > 0) {
+      return res.status(400).json({ message: "Email already registered" });
+    }
+
     const hashedPassword = await bcrypt.hash(body.password, 10);
     body.password = hashedPassword;
 
     const newUser = await UsersModel.register(body);
 
+    const data = `Verification email sent to ${body.email}`
     try {
       await sendEmail(body.email, newUser.emailToken);
       console.log("Verification email sent to:", body.email);
@@ -37,9 +45,11 @@ const register = async (req, res) => {
 
     res.status(201).json({
       message: "REGISTER success",
-      data: newUser,
+      data: data
     });
+    
   } catch (error) {
+    console.error("Error registering user:", error);
     res.status(500).json({
       message: "Server Error",
       serverMessage: error.message,

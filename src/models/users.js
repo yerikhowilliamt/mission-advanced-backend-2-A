@@ -6,10 +6,16 @@ const getAllUsers = () => {
   return dbPool.execute(SQLQuery);
 };
 
-const getUserByEmail = (email) => {
+const getUserByEmail = async (email) => {
   const SQLQuery = "SELECT * FROM user WHERE email = ?";
-  return dbPool.execute(SQLQuery, [email]);
+  try {
+    const [rows, fields] = await dbPool.execute(SQLQuery, [email]);
+    return rows;
+  } catch (error) {
+    throw new Error(error.message);
+  }
 };
+
 
 const register = async (body) => {
   const { email, fullname, password, username } = body;

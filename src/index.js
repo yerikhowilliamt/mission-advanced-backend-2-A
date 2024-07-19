@@ -50,7 +50,7 @@ app.use(multer({storage: fileStorage, fileFilter: fileFilter}).single('image'))
 app.use("/login", loginRoutes);
 app.use("/register", registerRoutes);
 app.use("/verify-email", verifyEmailRoutes);
-app.use("/upload", UploadFileRoutes);
+app.use("/upload", middlewareAccessValidation, UploadFileRoutes);
 app.use("/user", middlewareAccessValidation, usersRoutes);
 app.use("/tutor", middlewareAccessValidation, tutorsRoutes);
 app.use("/course", middlewareAccessValidation, kelasRoutes);
