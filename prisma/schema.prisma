@@ -1,0 +1,277 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum Status_pembayaran {
+  Berhasil
+  Gagal
+  Belum_Bayar
+}
+
+enum Status_kelas {
+  Selesai
+  Sedang_Berjalan
+}
+
+enum Jenis_pembayaran {
+  Transfer_Bank
+  E_Wallet
+  Debit_Card
+  Kredit_Card
+}
+
+model User {
+  id Int @id @default(autoincrement())
+  fullname String? @db.VarChar(100)
+  username String @db.VarChar(100)
+  email String @db.VarChar(100) @unique
+  password String @db.VarChar(100)
+  emailToken String? @db.VarChar(100) @unique
+  isVerified Boolean? @default(false)
+
+  @@map("user")
+}
+
+model Tutor {
+  nama String @db.VarChar(100)
+  email String @id @db.VarChar(100)
+  password String @db.VarChar(100)
+  jabatan String @db.VarChar(100)
+  perusahaan String @db.VarChar(100)
+  created_at DateTime @default(now())
+
+  mengajar Mengajar[]
+
+  @@map("tutor")
+}
+
+model Kelas {
+  id Int @id @default(autoincrement())
+  nama String @db.VarChar(100)
+  harga Decimal @db.Decimal(10, 2)
+  deskripsi String @db.Text
+  background_foto String @db.Text
+  video String @db.Text
+  created_at DateTime @default(now())
+
+  kategori_kelas_relasi Kategori_kelas_relasi[]
+  mengajar Mengajar[]
+  silabus Silabus[]
+  transaksi_kelas Transaksi_kelas[]
+
+  @@map("kelas")
+}
+
+model Kategori_kelas {
+  id Int @id @default(autoincrement())
+  nama String @db.VarChar(100)
+  created_at DateTime @default(now())
+
+  kategori_kelas_relasi Kategori_kelas_relasi[]
+
+  @@map("kategori_kelas")
+}
+
+model Kategori_kelas_relasi {
+  id Int @id @default(autoincrement())
+  id_kelas Int
+  id_kategori_kelas Int
+  created_at DateTime @default(now())
+  
+  kelas Kelas @relation(fields: [id_kelas], references: [id])
+  kategori_kelas Kategori_kelas @relation(fields: [id_kategori_kelas], references: [id])
+
+  @@map("kategori_kelas_relasi")
+}
+
+model Kelas_saya {
+  id Int @id @default(autoincrement())
+  progres_kelas Float
+  status_kelas Status_kelas
+  created_at DateTime @default(now())
+
+  orders_kelas Orders_kelas[]
+  pretest_kelas Pretest_kelas[]
+
+  @@map("kelas_saya")
+}
+
+model Material {
+  id Int @id @default(autoincrement())
+  durasi DateTime @db.Time()
+  kuis String @db.VarChar(100)
+  rangkuman String @db.Text
+
+  created_at DateTime @default(now())
+
+  modul_material Modul_material[]
+
+  @@map("material")
+}
+
+model Mengajar {
+  id Int @id @default(autoincrement())
+  id_kelas Int
+  email_tutor String @db.VarChar(100)
+  created_at DateTime @default(now())
+
+  kelas Kelas @relation(fields: [id_kelas], references: [id])
+  tutor Tutor @relation(fields: [email_tutor], references: [email])
+
+  @@map("mengajar")
+}
+
+model Modul_kelas {
+  id Int @id @default(autoincrement())
+  nama String @db.VarChar(100)
+  created_at DateTime @default(now())
+
+  modul_material Modul_material[]
+  silabus Silabus[]
+
+  @@map("modul_kelas")
+}
+
+model Modul_material {
+  id Int @id @default(autoincrement())
+  id_material Int
+  id_modul_kelas Int
+
+  material Material @relation(fields: [id_material], references: [id])
+  modul_kelas Modul_kelas @relation(fields: [id_modul_kelas], references: [id])
+
+  @@map("modul_material")
+}
+
+model Order {
+  id Int @id @default(autoincrement())
+  nama String @db.VarChar(100)
+  invoice String @db.VarChar(100)
+  waktu_transaksi DateTime @db.Timestamp()
+  total_pembayaran Decimal @db.Decimal(10, 2)
+  harga Decimal @db.Decimal(8, 2)
+  status_pembayaran Status_pembayaran
+  created_at DateTime @default(now())
+
+  orders_kelas Orders_kelas[]
+  orders_pembayaran Orders_pembayaran[]
+
+  @@map("orders")
+}
+
+model Orders_kelas {
+  id Int @id @default(autoincrement())
+  id_orders Int
+  id_kelas_saya Int
+  created_at DateTime @default(now())
+
+  orders Order @relation(fields: [id_orders], references: [id])
+  kelas_saya Kelas_saya @relation(fields: [id_kelas_saya], references: [id])
+
+  @@map("orders_kelas")
+}
+
+model Pembayaran {
+  id Int @id @default(autoincrement())
+  kode String @db.VarChar(100)
+  nama String @db.VarChar(100)
+  jenis_pembayaran Jenis_pembayaran
+  created_at DateTime @default(now())
+
+  orders_pembayaran Orders_pembayaran[]
+  transaksi_kelas Transaksi_kelas[]
+
+  @@map("pembayaran")
+}
+
+model Orders_pembayaran {
+  id Int @id @default(autoincrement())
+  id_orders Int
+  id_pembayaran Int
+  created_at DateTime @default(now())
+
+  orders Order @relation(fields: [id_orders], references: [id])
+  pembayaran Pembayaran @relation(fields: [id_pembayaran], references: [id])
+}
+
+model Pretest {
+  id Int @id @default(autoincrement())
+  jdudul_pertanyaan String @db.VarChar(100)
+  list_soal Int
+  opsi_jawaban String @db.VarChar(200)
+  pertanyaan String @db.Text
+  created_at DateTime @default(now())
+
+  pretest_kelas Pretest_kelas[]
+  review_pretest Review_pretest[]
+
+  @@map("pretest")
+}
+
+model Pretest_kelas {
+  id Int @id @default(autoincrement())
+  id_pretest Int
+  id_kelas_saya Int
+  created_at DateTime @default(now())
+
+  pretest Pretest @relation(fields: [id_pretest], references: [id])
+  kelas_saya Kelas_saya @relation(fields: [id_kelas_saya], references: [id])
+
+  @@map("pretest_kelas")
+}
+
+model Review {
+  id Int @id @default(autoincrement())
+  rating Decimal @db.Decimal(2, 1)
+  deskripsi String @db.Text
+  created_at DateTime @default(now())
+
+  review_pretest Review_pretest[]
+
+  @@map("review")
+}
+
+model Review_pretest {
+  id Int @id @default(autoincrement())
+  id_pretest Int
+  id_review Int
+  created_at DateTime @default(now())
+
+  pretest Pretest @relation(fields: [id_pretest], references: [id])
+  review Review @relation(fields: [id_review], references: [id])
+
+  @@map("review_pretest")
+}
+
+model Silabus {
+  id Int @id @default(autoincrement())
+  id_kelas Int
+  id_modul Int
+  created_at DateTime @default(now())
+
+  kelas Kelas @relation(fields: [id_kelas], references: [id])
+  modul Modul_kelas @relation(fields: [id_modul], references: [id])
+
+  @@map("silabus")
+}
+
+model Transaksi_kelas {
+  id Int @id @default(autoincrement())
+  id_kelas Int
+  id_pembayaran Int
+  created_at DateTime @default(now())
+
+  kelas Kelas @relation(fields: [id_kelas], references: [id])
+  pembayaran Pembayaran @relation(fields: [id_pembayaran], references: [id])
+}

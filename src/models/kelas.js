@@ -1,54 +1,64 @@
-const dbPool = require("../config/database");
+const { PrismaClient } = require('@prisma/client');
+const prisma = new PrismaClient();
 
-const getAllKelas = (filterParams = {}, orderBy = 'nama', sort = 'ASC', search = '') => {
+const getAllKelas = async (filterParams = {}, orderBy = 'nama', sort = 'asc', search = '') => {
   const { nama, harga } = filterParams;
-  let SQLQuery = "SELECT * FROM kelas WHERE 1 = 1";
 
-  if (nama) {
-    SQLQuery += ` AND nama LIKE '%${nama}%'`;
-  }
+  const whereClause = {
+    AND: [
+      nama ? { nama: { contains: nama.toLowerCase() } } : undefined,
+      harga ? { harga: parseFloat(harga) } : undefined,
+      search ? {
+        OR: [
+          { nama: { contains: search.toLowerCase() } },
+          { deskripsi: { contains: search.toLowerCase() } }
+        ]
+      } : undefined
+    ].filter(Boolean)
+  };
 
-  if (harga) {
-    SQLQuery += ` AND harga = ${harga}`;
-  }
+  const sortDirection = sort.toLowerCase() === 'asc' ? 'asc' : 'desc';
 
-  if (search) {
-    SQLQuery += ` AND (nama LIKE '%${search}%' OR deskripsi LIKE '%${search}%')`;
-  }
-
-  SQLQuery += ` ORDER BY ${orderBy} ${sort}`;
-
-  return dbPool.execute(SQLQuery);
+  return await prisma.kelas.findMany({
+    where: whereClause,
+    orderBy: {
+      [orderBy]: sortDirection
+    }
+  });
 };
 
-const createNewKelas = (body) => {
+
+const createNewKelas = async (body) => {
   const { nama, harga, deskripsi, background_foto, video } = body;
-  const SQLQuery = `INSERT INTO kelas (nama, harga, deskripsi, background_foto, video) VALUES (?, ?, ?, ?, ?)`;
-  return dbPool.execute(SQLQuery, [
-    nama,
-    harga,
-    deskripsi,
-    background_foto,
-    video,
-  ]);
+  return await prisma.kelas.create({
+    data: {
+      nama,
+      harga,
+      deskripsi,
+      background_foto,
+      video
+    }
+  });
 };
 
-const updateKelas = (body, id) => {
+const updateKelas = async (body, id) => {
   const { nama, harga, deskripsi, background_foto, video } = body;
-  const SQLQuery = `UPDATE kelas SET nama = ?, harga = ?, deskripsi = ?, background_foto = ?, video = ? WHERE id=?`;
-  return dbPool.execute(SQLQuery, [
-    nama,
-    harga,
-    deskripsi,
-    background_foto,
-    video,
-    id,
-  ]);
+  return await prisma.kelas.update({
+    where: { id: parseInt(id, 10) },
+    data: {
+      nama,
+      harga,
+      deskripsi,
+      background_foto,
+      video
+    }
+  });
 };
 
-const deleteKelas = (id) => {
-  const SQLQuery = `DELETE FROM kelas WHERE id=?`;
-  return dbPool.execute(SQLQuery, [id]);
+const deleteKelas = async (id) => {
+  return await prisma.kelas.delete({
+    where: { id: parseInt(id, 10) }
+  });
 };
 
 module.exports = { getAllKelas, createNewKelas, updateKelas, deleteKelas };

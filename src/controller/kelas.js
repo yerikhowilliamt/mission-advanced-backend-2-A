@@ -1,19 +1,14 @@
 const KelasModel = require("../models/kelas");
 
 const getAllKelas = async (req, res) => {
-  const { filter, orderBy, sort, search } = req.query;
-  const filterParams = {};
+  const { nama, harga, orderBy = 'nama', sort = 'asc', search = '' } = req.query;
 
-  if (filter) {
-    try {
-      Object.assign(filterParams, JSON.parse(filter));
-    } catch (error) {
-      return res.status(400).json({ message: 'Invalid filter JSON format' });
-    }
-  }
+  const filterParams = {};
+  if (nama) filterParams.nama = nama;
+  if (harga) filterParams.harga = harga;
 
   try {
-    const [data] = await KelasModel.getAllKelas(filterParams, orderBy, sort, search);
+    const data = await KelasModel.getAllKelas(filterParams, orderBy, sort, search);
 
     if (!data || data.length === 0) {
       return res.status(404).json({
@@ -28,25 +23,24 @@ const getAllKelas = async (req, res) => {
   } catch (error) {
     res.status(500).json({
       message: 'Server Error',
-      serverMessage: error,
+      serverMessage: error.message,
     });
   }
 };
-
 
 const createNewKelas = async (req, res) => {
   const { body } = req;
 
   try {
-    await KelasModel.createNewKelas(body);
+    const newKelas = await KelasModel.createNewKelas(body);
     res.json({
       message: "CREATE new kelas success",
-      data: body,
+      data: newKelas,
     });
   } catch (error) {
     res.status(500).json({
       message: "Server Error",
-      serverMessage: error,
+      serverMessage: error.message,
     });
   }
 };
@@ -54,16 +48,23 @@ const createNewKelas = async (req, res) => {
 const updateKelas = async (req, res) => {
   const { id } = req.params;
   const { body } = req;
+
+  const numericId = parseInt(id, 10);
+
+  if (isNaN(numericId)) {
+    return res.status(400).json({ message: 'Invalid ID format' });
+  }
+
   try {
-    await KelasModel.updateKelas(body, id);
+    const updatedKelas = await KelasModel.updateKelas(body, numericId);
     res.json({
       message: "UPDATE kelas success",
-      data: req.body,
+      data: updatedKelas,
     });
   } catch (error) {
     res.status(500).json({
       message: "Server Error",
-      serverMessage: error,
+      serverMessage: error.message,
     });
   }
 };
@@ -71,8 +72,14 @@ const updateKelas = async (req, res) => {
 const deleteKelas = async (req, res) => {
   const { id } = req.params;
 
+  const numericId = parseInt(id, 10);
+
+  if (isNaN(numericId)) {
+    return res.status(400).json({ message: 'Invalid ID format' });
+  }
+
   try {
-    await KelasModel.deleteKelas(id);
+    await KelasModel.deleteKelas(numericId);
     res.json({
       message: "DELETE kelas success",
       data: null,
@@ -80,7 +87,7 @@ const deleteKelas = async (req, res) => {
   } catch (error) {
     res.status(500).json({
       message: "Server Error",
-      serverMessage: error,
+      serverMessage: error.message,
     });
   }
 };
